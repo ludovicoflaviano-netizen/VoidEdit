@@ -20,6 +20,7 @@
     "wait-on": "latest"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "latest",
     "electron-builder": "latest"
   },
   "build": {
@@ -36,14 +37,8 @@
     },
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
+        {"target": "nsis", "arch": ["x64"]},
+        {"target": "portable", "arch": ["x64"]}
       ],
       "artifactName": "VoidEdit-${version}-${arch}.${ext}"
     },
