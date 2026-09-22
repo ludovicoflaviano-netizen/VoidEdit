@@ -1,0 +1,1 @@
+const {contextBridge,ipcRenderer}=require("electron");contextBridge.exposeInMainWorld("voidEdit",{openMedia:()=>ipcRenderer.invoke("open-media")});
