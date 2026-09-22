@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, protocol } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, protocol, net } = require("electron");
 const path = require("path");
 const fs = require("fs/promises");
 
@@ -16,17 +16,18 @@ function createWindow() {
       nodeIntegration: false
     }
   });
+  w.webContents.on("render-process-gone", (_, details) => console.error("Renderer stopped:", details.reason));
   if (!app.isPackaged) w.loadURL("http://localhost:5173");
   else w.loadFile(path.join(__dirname, "../dist/index.html"));
 }
 
 app.whenReady().then(() => {
   protocol.handle("voidmedia", async request => {
-    const raw = decodeURIComponent(new URL(request.url).pathname);
-    const filePath = process.platform === "win32" && raw.startsWith("/") ? raw.slice(1) : raw;
     try {
-      return await net.fetch("file://" + filePath.replace(/\\/g, "/"));
-    } catch {
+      const filePath = decodeURIComponent(new URL(request.url).pathname).replace(/^\/+/, process.platform === "win32" ? "" : "/");
+      return await net.fetch("file://" + (process.platform === "win32" ? "/" : "") + filePath.replace(/\\/g, "/"));
+    } catch (error) {
+      console.error("Media load failed:", error);
       return new Response("Not found", { status: 404 });
     }
   });
@@ -34,7 +35,7 @@ app.whenReady().then(() => {
   ipcMain.handle("open-media", async () => {
     const r = await dialog.showOpenDialog({
       properties: ["openFile", "multiSelections"],
-      filters: [{ name: "Media", extensions: ["mp4","mov","mkv","webm","mp3","wav","png","jpg","jpeg"] }]
+      filters: [{ name: "Media", extensions: ["mp4","mov","mkv","webm","mp3","wav","ogg","m4a","png","jpg","jpeg"] }]
     });
     return r.canceled ? [] : r.filePaths;
   });
@@ -56,7 +57,7 @@ app.whenReady().then(() => {
     });
     if (r.canceled) return null;
     try { return JSON.parse(await fs.readFile(r.filePaths[0], "utf8")); }
-    catch { return null; }
+    catch (error) { console.error("Project load failed:", error); return null; }
   });
 
   createWindow();
